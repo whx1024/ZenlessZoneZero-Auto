@@ -1,10 +1,11 @@
-
 name: 部署文档
 
 on:
   push:
     branches:
-      - main
+      - page
+  workflow_dispatch:
+
 
 permissions:
   contents: write
