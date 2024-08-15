@@ -14,45 +14,47 @@ permissions:
 
 jobs:
   build:
-
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: 下载 Python 3.10
       run: |
         Start-BitsTransfer "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
         Start-BitsTransfer "https://bootstrap.pypa.io/get-pip.py"
+        Start-BitsTransfer "https://aka.ms/vs/17/release/vc_redist.x64.exe" "(DLL)初始化例程失败时-点我.exe"
         7z e python-3.10.11-embed-amd64.zip -opy310\
-        # 解决pip安装问题
+        # 使 pip 可安装
         (Get-Content ".\py310\python310._pth") -replace '#import site', 'import site' | Set-Content ".\py310\python310._pth"
         .\py310\python.exe get-pip.py
         Remove-Item python-3.10.11-embed-amd64.zip
         Remove-Item get-pip.py
-    - name: 安装依赖
+    
+    - name: 安装CPU依赖
       run: |
         .\py310\python.exe -m pip install -r requirements-cpu.txt
+
+    - name: 预下载模型
+      run: |
+        # 修补 download.py 使其可独立运行
+        $fileContent = Get-Content ".\utils\download.py"
+        $fileContent = $fileContent -replace 'from .init import logger, RootPath', 'from loguru import logger' 
+        $fileContent = $fileContent -replace 'DownLoadPath = RootPath / "download"', 'DownLoadPath = Path(__file__).parent / "download"'
+        Set-Content download.py $fileContent
+        .\py310\python.exe download.py
+        Remove-Item download.py
+        
     - name: 打包
       run: |
-        7z a ${{ env.TAG_NAME}}.7z ..
-        dir
-    - name: 创建 Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        7z a zzzAuto-Onekey.7z ..
+    
+    - name: Release
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ env.TAG_NAME }}
-        release_name: ${{ env.TAG_NAME }}
-        body: ZenlessZoneZero-Auto CPU版一键包
-        draft: false
-        prerelease: false
-    - name: 上传 7z 压缩包
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ env.TAG_NAME }}.7z
-        asset_name: ${{ env.TAG_NAME }}.7z
-        asset_content_type: application/x-7z-compressed
+        name: ${{ env.TAG_NAME}} CPU一键包
+        body: "国内下载链接：https://mirror.ghproxy.com/https://github.com/whx1024/ZenlessZoneZero-Auto/releases/latest/download/zzzAuto-Onekey.zip"
+        # 生成草稿，不会直接发布
+        draft: true
+        # 如果没有目标文件，则失败停止发布
+        fail_on_unmatched_files: true
+        files: |
+          zzzAuto-Onekey.7z
