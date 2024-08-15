@@ -51,7 +51,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         name: ${{ env.TAG_NAME}} CPU一键包
-        body: "国内下载链接：https://mirror.ghproxy.com/https://github.com/whx1024/ZenlessZoneZero-Auto/releases/latest/download/zzzAuto-Onekey.zip"
+        body: "使用前务必阅读README！！国内下载链接：https://mirror.ghproxy.com/https://github.com/whx1024/ZenlessZoneZero-Auto/releases/latest/download/zzzAuto-Onekey.7z"
         # 生成草稿，不会直接发布
         draft: true
         # 如果没有目标文件，则失败停止发布
