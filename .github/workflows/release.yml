@@ -1,14 +1,13 @@
 name: 打包并发布 📦
+run-name: ${{ github.event.inputs.VERSION}}
 
 on:
   workflow_dispatch:
     inputs:
-      TAG_NAME:
+      VERSION:
         description: '请输入版本号'
         required: true
 
-env:
-  TAG_NAME: ${{ github.event.inputs.TAG_NAME}}
 permissions:
   contents: write
 
@@ -19,6 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: 下载 Python 3.10
       run: |
+        # 最简版 Python 3.10
         Start-BitsTransfer "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
         Start-BitsTransfer "https://bootstrap.pypa.io/get-pip.py"
         Start-BitsTransfer "https://aka.ms/vs/17/release/vc_redist.x64.exe" "(DLL)初始化例程失败时-点我.exe"
@@ -45,12 +45,16 @@ jobs:
         
     - name: 打包
       run: |
+        # 需要start.exe下载地址，或bat脚本
+        Set-Content "启动(右键管理员运行).bat" "chcp 65001 & cd /d %~dp0 & .\py310\python.exe main.py & pause"
+        Copy-Item config.example.yaml config.yaml
         7z a zzzAuto-Onekey.7z ..
     
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
-        name: ${{ env.TAG_NAME}} CPU一键包
+        name: ${{ github.event.inputs.VERSION}} CPU一键包
+        # tag_name: ${{ github.event.inputs.VERSION}}
         body: "使用前务必阅读README！！国内[下载链接](https://mirror.ghproxy.com/https://github.com/sMythicalBird/ZenlessZoneZero-Auto/releases/latest/download/zzzAuto-Onekey.7z)"
         # 生成草稿，不会直接发布
         draft: true
