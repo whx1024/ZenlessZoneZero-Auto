@@ -19,14 +19,37 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Download Python 3.10
+    - name: 下载 Python 3.10
       run: |
         Start-BitsTransfer "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip"
         7z e python-3.10.11-embed-amd64.zip -opy310\
-        Remove-Item python-3.10.11-embed-amd64.zip
-        cd py310
         Start-BitsTransfer "https://bootstrap.pypa.io/get-pip.py"
-        python get-pip.py
-    - name: Install dependencies
+        .\py310\python.exe get-pip.py
+        Remove-Item python-3.10.11-embed-amd64.zip
+        Remove-Item get-pip.py
+    - name: 安装依赖
       run: |
-        .\py310\python -m pip install -r requirements-cpu.txt
+        .\py310\python.exe -m pip install -r requirements-cpu.txt
+    - name: 打包
+      run: |
+        7z a ${{ env.TAG_NAME}}.7z ..
+    - name: 创建 Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        release_name: 发布 ${{ env.TAG_NAME }}
+        body: 使用前一定要阅读README的游戏内设置说明
+        draft: false
+        prerelease: false
+    - name: 上传 7z 压缩包
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ env.TAG_NAME }}.7z
+        asset_name: ${{ env.TAG_NAME }}.7z
+        asset_content_type: application/x-7z-compressed
